@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_socketapp/screens/client_page.dart';
 import 'package:flutter_socketapp/screens/home_page.dart';
 import 'package:flutter_socketapp/screens/server_page.dart';
+import 'package:flutter_socketapp/screens/view_page.dart';
 
 void main() {
   runApp(const MyApp());

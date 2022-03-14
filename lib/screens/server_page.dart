@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_socketapp/models/message_item.dart';
@@ -14,7 +15,6 @@ class ServerPage extends StatefulWidget {
 
 class _ServerPageState extends State<ServerPage> {
   ServerSocket? serverSocket;
-  Socket? clientSocket;
   int port = 9898;
   String localIp = "";
   final networkInfo = NetworkInfo();
@@ -58,42 +58,49 @@ class _ServerPageState extends State<ServerPage> {
 
   void startServer() async {
     runZoned(() async {
-      serverSocket =
-          await ServerSocket.bind(InternetAddress.anyIPv4, port, shared: true);
+      serverSocket = await ServerSocket.bind("0.0.0.0", port, shared: true);
       print("Server başlatıldı. Local IP:" + localIp + ":" + port.toString());
-      serverSocket!.listen(handleClient);
+      serverSocket!.listen((client) {
+        handleClient(client);
+      });
     });
   }
 
   void handleClient(Socket client) {
-    print("girdi");
-    clientSocket = client;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           "New client connected. Client Information: " +
-              clientSocket!.remoteAddress.address +
+              client.remoteAddress.address +
               ":" +
-              clientSocket!.remotePort.toString(),
+              client.remotePort.toString(),
         ),
       ),
     );
 
-    clientSocket!.listen(
-      (onData) {
-        print(String.fromCharCodes(onData).trim());
+    client.listen(
+      (Uint8List data) async {
+        print(
+            client.remoteAddress.address + ":" + client.remotePort.toString());
+        print(String.fromCharCodes(data).trim());
         setState(() {
           items.insert(
               0,
               MessageItem(
-                  clientSocket!.remoteAddress.address +
+                  client.remoteAddress.address +
                       ":" +
-                      clientSocket!.remotePort.toString(),
-                  String.fromCharCodes(onData).trim()));
+                      client.remotePort.toString(),
+                  String.fromCharCodes(data).trim()));
         });
       },
-      onError: (e) {},
-      onDone: () {},
+      onError: (e) {
+        print(e);
+        client.close();
+      },
+      onDone: () {
+        print("Client left");
+        client.close();
+      },
     );
   }
 
